@@ -5,6 +5,10 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
 
+fn type_of<T>(_: &T) -> String {
+    return std::any::type_name::<T>().to_string();
+}
+
 pub fn exists(path: &str) -> bool {
     let file = path.replace("/", "");
 
@@ -23,7 +27,7 @@ pub fn start() {
 
     let listener = TcpListener::bind(end_point).unwrap();
 
-    println!("Web Server is live at: https://{}:{}", HOST, PORT);
+    println!("Web Server is live at: http://{}:{}", HOST, PORT);
 
     for stream in listener.incoming() {
         let _stream = stream.unwrap();
@@ -35,17 +39,21 @@ fn handle_connection(mut stream: TcpStream, paths: &HashMap<String, String>) {
     let reader = BufReader::new(&mut stream);
 
     let r = reader.lines().next();
-    if r.is_none() {
-        println!("None Error");
-        return
+    match r {
+        Some(Ok(ref _val)) => {
+
+            let request_line = r.unwrap().unwrap();
+            let request = Req::new(&request_line);
+            format_req(&request);
+
+            let response = handle_request(&request, &paths);
+
+            stream.write_all(response.as_bytes()).unwrap();
+            
+        }
+        Some(Err(_e)) => { println!("HTTPS not supported");return },
+        None => { println!("None Error"); }
     }
-    let request_line = r.unwrap().unwrap();
-    let request = Req::new(&request_line);
-    format_req(&request);
-
-    let response = handle_request(&request, &paths);
-
-    stream.write_all(response.as_bytes()).unwrap();
 }
 
 fn handle_request(req: &Req, paths: &HashMap<String, String>) -> String {
