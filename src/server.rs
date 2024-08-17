@@ -5,10 +5,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
 
-fn type_of<T>(_: &T) -> String {
-    return std::any::type_name::<T>().to_string();
-}
-
 pub fn exists(path: &str) -> bool {
     let file = path.replace("/", "");
 
@@ -49,7 +45,7 @@ fn handle_connection(mut stream: TcpStream, paths: &HashMap<String, String>) {
             let response = handle_request(&request, &paths);
 
             stream.write_all(response.as_bytes()).unwrap();
-            
+
         }
         Some(Err(_e)) => { println!("HTTPS not supported");return },
         None => { println!("None Error"); }
@@ -60,14 +56,13 @@ fn handle_request(req: &Req, paths: &HashMap<String, String>) -> String {
     let binding = "Not Found".to_string();
     let body = paths.get(&req.path).unwrap_or(&binding);
     if req.path.contains(".") && exists(&req.path) {
-        println!("File Found {}", req.path);
+        // println!("File Found {}", req.path);
         let contents = fs::read_to_string(req.path.replace("/", "")).unwrap();
         format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", contents.len(), contents)
     } else if body.to_string() == binding {
-        println!("Not Found");
         return "HTTP/1.1 404 NOT FOUND\r\nContent-Length: 9\r\n\r\nNot Found".to_string();
     } else {
-        println!("Found");
+        // println!("Found");
         format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", body.len(), body)
     }
 }
