@@ -23,7 +23,7 @@ pub fn start() {
 
     let listener = TcpListener::bind(end_point).unwrap();
 
-    println!("Web Server is listening at port: {:?}", PORT);
+    println!("Web Server is live at: https://{}:{}", HOST, PORT);
 
     for stream in listener.incoming() {
         let _stream = stream.unwrap();
