@@ -5,10 +5,24 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
 
-pub fn exists(path: &str) -> bool {
-    let file = path.replace("/", "");
+pub fn exists(path: &str) -> PathCheck {
+    let files: Vec<&str> = (path.split("/")).collect();
+    let mut file = "".to_owned();
+    let mut i = 0;
+    for f in &files {
+        if f == &"" {
+            continue;
+        }
+        if i != 0 {
+            file.push_str("/");
+        }
+        i += 1;
+        file.push_str(&f);
+    }
+    let p = file;
+    let exist = Path::new(&p).exists();
+    return PathCheck::new(p, exist);
 
-    return Path::new(&file).exists();
 }
 
 pub fn start() {
@@ -55,9 +69,11 @@ fn handle_connection(mut stream: TcpStream, paths: &HashMap<String, String>) {
 fn handle_request(req: &Req, paths: &HashMap<String, String>) -> String {
     let binding = "Not Found".to_string();
     let body = paths.get(&req.path).unwrap_or(&binding);
-    if req.path.contains(".") && exists(&req.path) {
+    println!("{:?}", &req.path);
+    let ex = exists(&req.path);
+    if req.path.contains(".") && ex.exists {
         // println!("File Found {}", req.path);
-        let contents = fs::read_to_string(req.path.replace("/", "")).unwrap();
+        let contents = fs::read_to_string(ex.p).unwrap();
         format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", contents.len(), contents)
     } else if body.to_string() == binding {
         return "HTTP/1.1 404 NOT FOUND\r\nContent-Length: 9\r\n\r\nNot Found".to_string();
@@ -88,5 +104,17 @@ impl Req {
             path = "/index.html".to_owned();
         }
         Req{ req_type, path, proto }
+    }
+}
+
+#[derive(Debug)]
+pub struct PathCheck {
+    p: String,
+    exists: bool,
+}
+
+impl PathCheck {
+    fn new(p: String, exists: bool) -> PathCheck {
+        PathCheck { p, exists }
     }
 }
