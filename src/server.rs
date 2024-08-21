@@ -54,7 +54,6 @@ fn handle_connection(mut stream: TcpStream, paths: &HashMap<String, String>) {
 
             let request_line = r.unwrap().unwrap();
             let request = Req::new(&request_line);
-            format_req(&request);
 
             let response = handle_request(&request, &paths);
 
@@ -74,21 +73,24 @@ fn handle_request(req: &Req, paths: &HashMap<String, String>) -> String {
     if req.path.contains(".") && ex.exists {
         // println!("File Found {}", req.path);
         let contents = fs::read_to_string(ex.p).unwrap();
+        format_req(&req, "200");
         format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", contents.len(), contents)
     } else if body.to_string() == binding {
+        format_req(&req, "404");
         return "HTTP/1.1 404 NOT FOUND\r\nContent-Length: 9\r\n\r\nNot Found".to_string();
     } else {
         // println!("Found");
+        format_req(&req, "200");
         format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", body.len(), body)
     }
 }
 
-fn format_req(val: &Req) {
-    let value = " ".to_owned() + &val.req_type + " - " + &val.path + " ";
+fn format_req(val: &Req, code: &str) {
+    let value = " ".to_owned() + code + " - " + &val.path + " ";
     println!("{}", value);
 }
 
-struct Req {
+pub struct Req {
     req_type: String,
     path: String,
     proto: String,
@@ -107,10 +109,9 @@ impl Req {
     }
 }
 
-#[derive(Debug)]
 pub struct PathCheck {
     p: String,
-    exists: bool,
+    pub exists: bool,
 }
 
 impl PathCheck {
